@@ -1,4 +1,8 @@
-import { AssetTypeEnum, NetworkTypeEnum } from '@extension/enums';
+import {
+  AssetTypeEnum,
+  NetworkTypeEnum,
+  WalletConnectMethodEnum,
+} from '@extension/enums';
 
 // types
 import { INetwork } from '@extension/types';
@@ -52,7 +56,10 @@ const networks: INetwork[] = [
     ],
     namespace: {
       key: 'voi',
-      methods: ['signTransaction', 'signMessage'],
+      methods: [
+        WalletConnectMethodEnum.SignTxns,
+        WalletConnectMethodEnum.SignBytes,
+      ],
       reference: 'IXnoWtviVVJW5LGivNFc0Dq14V3kqaXu',
     },
     nativeCurrency: {
@@ -115,7 +122,10 @@ const networks: INetwork[] = [
     ],
     namespace: {
       key: 'algorand',
-      methods: ['signTransaction', 'signMessage'],
+      methods: [
+        WalletConnectMethodEnum.SignTxns,
+        WalletConnectMethodEnum.SignBytes,
+      ],
       reference: 'wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
     },
     nativeCurrency: {
@@ -152,7 +162,10 @@ const networks: INetwork[] = [
     ],
     namespace: {
       key: 'algorand',
-      methods: ['signTransaction', 'signMessage'],
+      methods: [
+        WalletConnectMethodEnum.SignTxns,
+        WalletConnectMethodEnum.SignBytes,
+      ],
       reference: 'mFgazF-2uRS1tMiL9dsj01hJGySEmPN2',
     },
     nativeCurrency: {
@@ -201,7 +214,10 @@ const networks: INetwork[] = [
     ],
     namespace: {
       key: 'algorand',
-      methods: ['signTransaction', 'signMessage'],
+      methods: [
+        WalletConnectMethodEnum.SignTxns,
+        WalletConnectMethodEnum.SignBytes,
+      ],
       reference: 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
     },
     nativeCurrency: {

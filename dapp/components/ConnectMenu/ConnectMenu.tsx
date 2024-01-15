@@ -22,7 +22,6 @@ import { ChevronDownIcon } from '@chakra-ui/icons';
 import React, { FC, useEffect, useState } from 'react';
 import { Provider, PROVIDER_ID, useWallet } from '@txnlab/use-wallet';
 import { SessionTypes } from '@walletconnect/types';
-import { useConnect } from '@web3modal/sign-react';
 
 // components
 import WalletConnectIcon from '@extension/components/WalletConnectIcon';
@@ -30,15 +29,26 @@ import WalletConnectIcon from '@extension/components/WalletConnectIcon';
 // config
 import { networks } from '@extension/config';
 
+// constants
+import {
+  ALGORAND_TEST_NET_GENESIS_HASH,
+  VOI_TEST_NET_GENESIS_HASH,
+} from '../../constants';
+
 // enums
 import { ConnectionTypeEnum } from '../../enums';
 
+// hooks
+import useWalletConnect from '../../hooks/useWalletConnect';
+
 // types
+import { ILogger } from '@common/types';
 import { INetwork } from '@extension/types';
 import { IWindow } from '@external/types';
 import { IAccountInformation } from '../../types';
 
 // utils
+import createLogger from '@common/utils/createLogger';
 import { getAccountInformation } from '../../utils';
 
 export interface IConnectResult {
@@ -58,31 +68,14 @@ const ConnectMenu: FC<IProps> = ({ onConnect, onReset }: IProps) => {
     isClosable: true,
     position: 'top',
   });
-  const { connect } = useConnect({
-    optionalNamespaces: {
-      // testnets
-      algorand: {
-        chains: ['algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe'],
-        events: [],
-        methods: ['algorand_signTransaction', 'algorand_signMessage'],
-      },
-      voi: {
-        chains: ['voi:IXnoWtviVVJW5LGivNFc0Dq14V3kqaXu'],
-        events: [],
-        methods: ['voi_signTransaction', 'voi_signMessage'],
-      },
-    },
-  });
+  const { connect } = useWalletConnect();
   const { connectedAccounts, providers } = useWallet();
   // state
   const [useWalletNetwork, setUseWalletNetwork] = useState<INetwork | null>(
     null
   );
   // misc
-  const algorandTestNetGenesisHash: string =
-    'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=';
-  const voiTestNetGenesisHash: string =
-    'IXnoWtviVVJW5LGivNFc0Dq14V3kqaXuK2u5OQrdVZo=';
+  const logger: ILogger = createLogger('debug');
   // handlers
   const handleConnectViaAlgorandProvider =
     (genesisHash: string) => async () => {
@@ -188,9 +181,88 @@ const ConnectMenu: FC<IProps> = ({ onConnect, onReset }: IProps) => {
     await provider.connect();
   };
   const handleWalletConnect = async () => {
-    const data: SessionTypes.Struct = await connect();
+    const _functionName: string = 'handleWalletConnect';
+    let accounts: IAccountInformation[];
+    let addresses: string[];
+    let namespace: SessionTypes.BaseNamespace | null;
+    let namespaceKey: string | null;
+    let network: INetwork | null;
+    let session: SessionTypes.Struct;
 
-    console.log(data);
+    try {
+      session = await connect();
+      console.log(session);
+      namespaceKey = Object.keys(session.namespaces)[0] || null;
+
+      if (!namespaceKey) {
+        logger.error(
+          `${_functionName}: failed to get namespace for session`,
+          session
+        );
+
+        throw new Error('failed to get namespace');
+      }
+
+      namespace = session.namespaces[namespaceKey] || null;
+
+      if (!namespace) {
+        logger.error(
+          `${_functionName}: failed to get namespace for session`,
+          session
+        );
+
+        throw new Error('failed to get namespace');
+      }
+
+      network =
+        namespace.chains
+          ?.map((chainId) =>
+            networks.find(
+              (value) =>
+                `${value.namespace.key}:${value.namespace.reference}` ===
+                chainId
+            )
+          )
+          .pop() || null;
+
+      if (!network) {
+        logger.error(
+          `${_functionName}: failed to get namespace for session`,
+          session
+        );
+
+        throw new Error('failed to get network for ');
+      }
+
+      addresses = namespace.accounts.reduce((acc, value) => {
+        const address: string | null = value.split(':').pop() || null;
+
+        return [...acc, ...(address ? [address] : [])];
+      }, []);
+      accounts = await Promise.all(
+        addresses.map(
+          async (value) =>
+            await getAccountInformation(
+              {
+                address: value,
+              },
+              // @ts-ignore
+              network
+            )
+        )
+      );
+
+      onConnect({
+        accounts,
+        connectionType: ConnectionTypeEnum.WalletConnectv2,
+        network,
+      });
+    } catch (error) {
+      toast({
+        status: 'error',
+        title: error.message,
+      });
+    }
   };
   const handleReset = async () => {
     setUseWalletNetwork(null);
@@ -238,7 +310,7 @@ const ConnectMenu: FC<IProps> = ({ onConnect, onReset }: IProps) => {
         <MenuGroup title="@agoralabs-sh/algorand-provider">
           <MenuItem
             onClick={handleConnectViaAlgorandProvider(
-              algorandTestNetGenesisHash
+              ALGORAND_TEST_NET_GENESIS_HASH
             )}
           >
             <HStack alignItems="center" w="full">
@@ -249,7 +321,9 @@ const ConnectMenu: FC<IProps> = ({ onConnect, onReset }: IProps) => {
           </MenuItem>
 
           <MenuItem
-            onClick={handleConnectViaAlgorandProvider(voiTestNetGenesisHash)}
+            onClick={handleConnectViaAlgorandProvider(
+              VOI_TEST_NET_GENESIS_HASH
+            )}
           >
             <HStack alignItems="center" w="full">
               <Text size="sm">Connect to Voi</Text>
@@ -263,7 +337,7 @@ const ConnectMenu: FC<IProps> = ({ onConnect, onReset }: IProps) => {
 
         <MenuGroup title="@txnlab/use-wallet">
           <MenuItem
-            onClick={handleConnectViaUseWallet(algorandTestNetGenesisHash)}
+            onClick={handleConnectViaUseWallet(ALGORAND_TEST_NET_GENESIS_HASH)}
           >
             <HStack alignItems="center" w="full">
               <Text size="sm">Connect to Algorand</Text>
@@ -272,7 +346,9 @@ const ConnectMenu: FC<IProps> = ({ onConnect, onReset }: IProps) => {
             </HStack>
           </MenuItem>
 
-          <MenuItem onClick={handleConnectViaUseWallet(voiTestNetGenesisHash)}>
+          <MenuItem
+            onClick={handleConnectViaUseWallet(VOI_TEST_NET_GENESIS_HASH)}
+          >
             <HStack alignItems="center" w="full">
               <Text size="sm">Connect to Voi</Text>
 

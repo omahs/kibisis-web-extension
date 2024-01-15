@@ -19,7 +19,6 @@ import {
   useInitializeProviders,
   WalletProvider,
 } from '@txnlab/use-wallet';
-import { Web3ModalSign } from '@web3modal/sign-react';
 import React, { ChangeEvent, FC, useEffect, useState } from 'react';
 
 // components
@@ -106,22 +105,6 @@ const App: FC = () => {
   return (
     <WalletProvider value={providers}>
       <ChakraProvider theme={theme}>
-        {/*wallet connect modal*/}
-        <Web3ModalSign
-          metadata={{
-            description: 'The Kibisis dApp example',
-            icons: [
-              `${window.location.protocol}//${window.location.host}/favicon.png`,
-            ],
-            name: document.title,
-            url: 'https://kibis.is',
-          }}
-          modalOptions={{
-            explorerRecommendedWalletIds: 'NONE',
-          }}
-          projectId={__WALLET_CONNECT_PROJECT_ID__}
-        />
-
         <Center as="main" backgroundColor="white">
           <Flex
             alignItems="center"

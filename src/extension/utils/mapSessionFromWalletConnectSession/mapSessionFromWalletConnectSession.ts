@@ -18,6 +18,8 @@ export default function mapSessionFromWalletConnectSession({
   const id: string = uuid();
   const now: Date = new Date();
 
+  console.log('mapSessionFromWalletConnectSession:', walletConnectSession);
+
   return {
     appName: walletConnectSession.peer.metadata.name,
     authorizedAddresses,
@@ -32,6 +34,7 @@ export default function mapSessionFromWalletConnectSession({
     walletConnectMetadata: {
       expiresAt: walletConnectSession.expiry,
       namespaces: walletConnectSession.namespaces,
+      pairingTopic: walletConnectSession.pairingTopic,
       topic: walletConnectSession.topic,
     },
   };

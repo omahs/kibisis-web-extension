@@ -2,18 +2,23 @@ import { SessionTypes } from '@walletconnect/types';
 import { getSdkError } from '@walletconnect/utils';
 import { Web3WalletTypes } from '@walletconnect/web3wallet';
 import { IWeb3Wallet } from '@walletconnect/web3wallet/dist/types';
-import { useEffect, useState } from 'react';
+import { MutableRefObject, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 // features
 import { setSessionThunk } from '@extension/features/sessions';
 
 // selectors
-import { useSelectLogger, useSelectWeb3Wallet } from '@extension/selectors';
+import {
+  useSelectLogger,
+  useSelectNetworks,
+  useSelectSessions,
+  useSelectWeb3Wallet,
+} from '@extension/selectors';
 
 // types
 import { ILogger } from '@common/types';
-import { IAppThunkDispatch, INetwork } from '@extension/types';
+import { IAppThunkDispatch, INetwork, ISession } from '@extension/types';
 import { IUseWalletConnectState } from './types';
 
 // utils
@@ -24,9 +29,14 @@ export default function useWalletConnect(
   uri: string | null
 ): IUseWalletConnectState {
   const _functionName: string = 'useWalletConnect';
+  const sessionsRef: MutableRefObject<ISession[]> = useRef<ISession[]>([]);
+  const web3WalletRef: MutableRefObject<IWeb3Wallet | null> =
+    useRef<IWeb3Wallet | null>(null);
   const dispatch: IAppThunkDispatch = useDispatch<IAppThunkDispatch>();
   // selectors
   const logger: ILogger = useSelectLogger();
+  const networks: INetwork[] = useSelectNetworks();
+  const sessions: ISession[] = useSelectSessions();
   const web3Wallet: IWeb3Wallet | null = useSelectWeb3Wallet();
   // states
   const [pairing, setPairing] = useState<boolean>(false);
@@ -73,10 +83,42 @@ export default function useWalletConnect(
   };
   const handleSessionProposal: (
     proposal: Web3WalletTypes.SessionProposal
-  ) => void = (proposal: Web3WalletTypes.SessionProposal) => {
+  ) => Promise<void> = async (proposal: Web3WalletTypes.SessionProposal) => {
+    let existingSession: ISession | null;
+    let existingSessionNetwork: INetwork | null;
+
     logger.debug(
       `${_functionName}(): received session proposal "${proposal.id}"`
     );
+
+    // if there is a pairing topic, check if the session exists
+    if (proposal.params.pairingTopic) {
+      existingSession =
+        sessionsRef.current.find(
+          (value) =>
+            value.walletConnectMetadata?.pairingTopic ===
+            proposal.params.pairingTopic
+        ) || null;
+      existingSessionNetwork =
+        networks.find(
+          (value) => value.genesisHash === existingSession?.genesisHash
+        ) || null;
+
+      if (web3WalletRef.current && existingSession && existingSessionNetwork) {
+        logger.debug(
+          `${_functionName}(): existing session found for pairing "${existingSession.walletConnectMetadata?.pairingTopic}"`
+        );
+
+        await web3WalletRef.current.approveSession({
+          id: proposal.id,
+          namespaces: createSessionNamespaces({
+            authorizedAddresses: existingSession.authorizedAddresses,
+            network: existingSessionNetwork,
+            proposalParams: proposal.params,
+          }),
+        });
+      }
+    }
 
     setSessionProposal(proposal);
     setPairing(false);
@@ -117,6 +159,12 @@ export default function useWalletConnect(
       }
     };
   }, [uri]);
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
+  useEffect(() => {
+    web3WalletRef.current = web3Wallet;
+  }, [web3Wallet]);
 
   return {
     approveSessionProposalAction,
