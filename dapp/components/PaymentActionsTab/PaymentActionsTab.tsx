@@ -17,7 +17,10 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { useWallet } from '@txnlab/use-wallet';
-import { decode as decodeBase64 } from '@stablelib/base64';
+import {
+  decode as decodeBase64,
+  encode as encodeBase64,
+} from '@stablelib/base64';
 import { encode as encodeHex } from '@stablelib/hex';
 import {
   decodeSignedTransaction,
@@ -33,6 +36,9 @@ import ConnectionNotInitializedContent from '../ConnectionNotInitializedContent'
 
 // enums
 import { ConnectionTypeEnum } from '../../enums';
+
+// hooks
+import useWalletConnect from '../../hooks/useWalletConnect';
 
 // theme
 import { theme } from '@extension/theme';
@@ -66,7 +72,10 @@ const SignTxnTab: FC<IProps> = ({
     isClosable: true,
     position: 'top',
   });
-  const { signTransactions } = useWallet();
+  const { signTransactions: signUseWalletTransactions } = useWallet();
+  // hooks
+  const { signTransactions: signWalletConnectTransactions } =
+    useWalletConnect();
   // states
   const [amount, setAmount] = useState<BigNumber>(new BigNumber('0'));
   const [signedTransaction, setSignedTransaction] =
@@ -118,12 +127,18 @@ const SignTxnTab: FC<IProps> = ({
           break;
         case ConnectionTypeEnum.UseWallet:
           result = await useWalletSignTxns(
-            signTransactions,
+            signUseWalletTransactions,
             [0],
             [encodeUnsignedTransaction(unsignedTransaction)]
           );
 
           break;
+        case ConnectionTypeEnum.WalletConnectv2:
+          await signWalletConnectTransactions(
+            [unsignedTransaction].map((value) => ({
+              txn: encodeBase64(encodeUnsignedTransaction(value)),
+            }))
+          );
         default:
           break;
       }

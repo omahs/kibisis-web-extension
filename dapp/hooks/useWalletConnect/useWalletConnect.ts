@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { WalletConnectMethodEnum } from '@extension/enums';
 
 // types
+import { IArc0001SignTxns } from '@common/types';
 import { IUseWalletConnectState } from './types';
 
 // utils
@@ -19,6 +20,7 @@ import extractFaviconUrl from '@external/utils/extractFaviconUrl';
 export default function useWalletConnect(): IUseWalletConnectState {
   // states
   const [signClient, setSignClient] = useState<SignClient | null>(null);
+  const [session, setSession] = useState<SessionTypes.Struct | null>(null);
   const [walletConnectModal, setWalletConnectModal] =
     useState<WalletConnectModal | null>(null);
   // misc
@@ -44,7 +46,7 @@ export default function useWalletConnect(): IUseWalletConnectState {
   // actions
   const connect = async () => {
     let pairing: PairingTypes.Struct | null;
-    let session: SessionTypes.Struct;
+    let _session: SessionTypes.Struct;
 
     if (!signClient || !walletConnectModal) {
       throw new Error('walletconnect not initialized');
@@ -62,7 +64,11 @@ export default function useWalletConnect(): IUseWalletConnectState {
         pairingTopic: pairing.topic,
       });
 
-      return await approval();
+      _session = await approval();
+
+      setSession(_session);
+
+      return _session;
     }
 
     const { approval, uri } = await signClient.connect({
@@ -75,16 +81,31 @@ export default function useWalletConnect(): IUseWalletConnectState {
 
     await walletConnectModal.openModal({ uri });
 
-    session = await approval();
+    _session = await approval();
 
     walletConnectModal.closeModal();
+    setSession(_session);
 
-    return session;
+    return _session;
+  };
+  const signTransactions = async (txns: IArc0001SignTxns[]) => {
+    if (signClient && session) {
+      await signClient.request({
+        topic: session.topic,
+        chainId: '',
+        request: {
+          method: WalletConnectMethodEnum.SignTxns,
+          params: [
+            '0x7468697320697320612074657374206d65737361676520746f206265207369676e6564',
+            '0x1d85568eEAbad713fBB5293B45ea066e552A90De',
+          ],
+        },
+      });
+    }
+    console.log(session);
   };
 
   useEffect(() => {
-    let _signClient: SignClient;
-
     setWalletConnectModal(
       new WalletConnectModal({
         projectId: __WALLET_CONNECT_PROJECT_ID__,
@@ -115,5 +136,6 @@ export default function useWalletConnect(): IUseWalletConnectState {
 
   return {
     connect,
+    signTransactions,
   };
 }
