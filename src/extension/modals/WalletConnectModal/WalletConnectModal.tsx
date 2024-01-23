@@ -7,14 +7,11 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
-  Skeleton,
-  SkeletonCircle,
   Spacer,
   Spinner,
   Text,
   VStack,
 } from '@chakra-ui/react';
-import { generateAccount } from 'algosdk';
 import React, { ChangeEvent, FC, ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Rings } from 'react-loader-spinner';
@@ -22,8 +19,10 @@ import { Rings } from 'react-loader-spinner';
 // components
 import Button from '@extension/components/Button';
 import EmptyState from '@extension/components/EmptyState';
+import NetworkSelect from '@extension/components/NetworkSelect';
 import SessionRequestHeader from '@extension/components/SessionRequestHeader';
 import WalletConnectBannerIcon from '@extension/components/WalletConnectBannerIcon';
+import WalletConnectModalBodySkeleton from './WalletConnectModalBodySkeleton';
 
 // constants
 import { DEFAULT_GAP } from '@extension/constants';
@@ -42,6 +41,7 @@ import {
   useSelectFetchingAccounts,
   useSelectInitializingWalletConnect,
   useSelectSelectedNetwork,
+  useSelectNetworks,
   useSelectWalletConnectModalOpen,
 } from '@extension/selectors';
 
@@ -67,7 +67,8 @@ const WalletConnectModal: FC<IProps> = ({ onClose }: IProps) => {
   const accounts: IAccount[] = useSelectAccounts();
   const fetching: boolean = useSelectFetchingAccounts();
   const initializing: boolean = useSelectInitializingWalletConnect();
-  const network: INetwork | null = useSelectSelectedNetwork();
+  const selectedNetwork: INetwork | null = useSelectSelectedNetwork();
+  const networks: INetwork[] = useSelectNetworks();
   const isOpen: boolean = useSelectWalletConnectModalOpen();
   // hooks
   const { scanning, startScanningAction, stopScanningAction, url } =
@@ -87,6 +88,9 @@ const WalletConnectModal: FC<IProps> = ({ onClose }: IProps) => {
   } = useWalletConnect(url);
   // states
   const [authorizedAddresses, setAuthorizedAddresses] = useState<string[]>([]);
+  const [network, setNetwork] = useState<INetwork>(
+    selectedNetwork || networks[0]
+  );
   // handlers
   const handleApproveClick = async () => {
     if (authorizedAddresses.length > 0 && network) {
@@ -117,131 +121,69 @@ const WalletConnectModal: FC<IProps> = ({ onClose }: IProps) => {
         authorizedAddresses.filter((value) => value !== address)
       );
     };
+  const handleNetworkSelect = (value: INetwork) => setNetwork(value);
   const handleRejectClick = async () => {
     await rejectSessionProposalAction();
 
     handleClose();
   };
   // renders
-  const renderContent = () => {
+  const renderBody = () => {
     let accountNodes: ReactNode[];
 
     if (initializing || scanning) {
       return (
-        <>
-          <ModalBody display="flex" px={DEFAULT_GAP}>
-            <VStack
-              alignItems="center"
-              flexGrow={1}
-              justifyContent="center"
-              spacing={4}
-              w="full"
-            >
-              <Spinner
-                thickness="4px"
-                speed="0.65s"
-                emptyColor={defaultTextColor}
-                color={primaryColor}
-                size="xl"
-              />
-              <Text color={defaultTextColor} fontSize="md" textAlign="center">
-                {t<string>(
-                  scanning
-                    ? 'captions.scanningForQrCode'
-                    : 'captions.initializingWalletConnect'
-                )}
-              </Text>
-            </VStack>
-          </ModalBody>
-          <ModalFooter p={DEFAULT_GAP}>
-            <Button
-              onClick={handleCancelClick}
-              size="lg"
-              variant="outline"
-              w="full"
-            >
-              {t<string>('buttons.cancel')}
-            </Button>
-          </ModalFooter>
-        </>
+        <VStack
+          alignItems="center"
+          flexGrow={1}
+          justifyContent="center"
+          spacing={4}
+          w="full"
+        >
+          <Spinner
+            thickness="4px"
+            speed="0.65s"
+            emptyColor={defaultTextColor}
+            color={primaryColor}
+            size="xl"
+          />
+
+          <Text color={defaultTextColor} fontSize="md" textAlign="center">
+            {t<string>(
+              scanning
+                ? 'captions.scanningForQrCode'
+                : 'captions.initializingWalletConnect'
+            )}
+          </Text>
+        </VStack>
       );
     }
 
     if (pairing) {
       return (
-        <>
-          <ModalBody display="flex" px={DEFAULT_GAP}>
-            <VStack
-              alignItems="center"
-              flexGrow={1}
-              justifyContent="center"
-              spacing={4}
-              w="full"
-            >
-              <Rings
-                ariaLabel="rings-loading"
-                color={primaryColor}
-                height={200}
-                radius="6"
-              />
-              <Text color={defaultTextColor} fontSize="md" textAlign="center">
-                {t<string>('captions.connectingToWalletConnect')}
-              </Text>
-            </VStack>
-          </ModalBody>
-          <ModalFooter p={DEFAULT_GAP}>
-            <Button
-              onClick={handleCancelClick}
-              size="lg"
-              variant="outline"
-              w="full"
-            >
-              {t<string>('buttons.cancel')}
-            </Button>
-          </ModalFooter>
-        </>
+        <VStack
+          alignItems="center"
+          flexGrow={1}
+          justifyContent="center"
+          spacing={4}
+          w="full"
+        >
+          <Rings
+            ariaLabel="rings-loading"
+            color={primaryColor}
+            height={200}
+            radius="6"
+          />
+
+          <Text color={defaultTextColor} fontSize="md" textAlign="center">
+            {t<string>('captions.connectingToWalletConnect')}
+          </Text>
+        </VStack>
       );
     }
 
     if (!network || fetching) {
-      return (
-        <>
-          <ModalBody display="flex" px={DEFAULT_GAP}>
-            {Array.from({ length: 3 }, (_, index) => (
-              <HStack
-                key={`wallet-connect-modal-fetching-item-${index}`}
-                py={4}
-                spacing={4}
-                w="full"
-              >
-                <SkeletonCircle size="12" />
-                <Skeleton flexGrow={1}>
-                  <Text
-                    color={defaultTextColor}
-                    fontSize="md"
-                    textAlign="center"
-                  >
-                    {ellipseAddress(generateAccount().addr, {
-                      end: 10,
-                      start: 10,
-                    })}
-                  </Text>
-                </Skeleton>
-              </HStack>
-            ))}
-          </ModalBody>
-          <ModalFooter p={DEFAULT_GAP}>
-            <Button
-              onClick={handleCancelClick}
-              size="lg"
-              variant="outline"
-              w="full"
-            >
-              {t<string>('buttons.cancel')}
-            </Button>
-          </ModalFooter>
-        </>
-      );
+      return <WalletConnectModalBodySkeleton />;
     }
 
     accountNodes = accounts.reduce<ReactNode[]>(
@@ -302,44 +244,49 @@ const WalletConnectModal: FC<IProps> = ({ onClose }: IProps) => {
     );
 
     return (
-      <>
-        <ModalBody display="flex" px={DEFAULT_GAP}>
-          <VStack w="full">
-            {accountNodes.length > 0 ? (
-              accountNodes
-            ) : (
-              <>
-                {/*empty state*/}
-                <Spacer />
-                <EmptyState text={t<string>('headings.noAccountsFound')} />
-                <Spacer />
-              </>
-            )}
-          </VStack>
-        </ModalBody>
+      <VStack w="full">
+        {accountNodes.length > 0 ? (
+          accountNodes
+        ) : (
+          <>
+            {/*empty state*/}
+            <Spacer />
+            <EmptyState text={t<string>('headings.noAccountsFound')} />
+            <Spacer />
+          </>
+        )}
+      </VStack>
+    );
+  };
+  const renderFooter = () => {
+    if (!network || fetching || pairing || initializing || scanning) {
+      return (
+        <Button
+          onClick={handleCancelClick}
+          size="lg"
+          variant="outline"
+          w="full"
+        >
+          {t<string>('buttons.cancel')}
+        </Button>
+      );
+    }
 
-        <ModalFooter p={DEFAULT_GAP}>
-          <HStack spacing={4} w="full">
-            <Button
-              onClick={handleRejectClick}
-              size="lg"
-              variant="outline"
-              w="full"
-            >
-              {t<string>('buttons.reject')}
-            </Button>
+    return (
+      <HStack spacing={4} w="full">
+        <Button
+          onClick={handleRejectClick}
+          size="lg"
+          variant="outline"
+          w="full"
+        >
+          {t<string>('buttons.reject')}
+        </Button>
 
-            <Button
-              onClick={handleApproveClick}
-              size="lg"
-              variant="solid"
-              w="full"
-            >
-              {t<string>('buttons.approve')}
-            </Button>
-          </HStack>
-        </ModalFooter>
-      </>
+        <Button onClick={handleApproveClick} size="lg" variant="solid" w="full">
+          {t<string>('buttons.approve')}
+        </Button>
+      </HStack>
     );
   };
 
@@ -364,21 +311,45 @@ const WalletConnectModal: FC<IProps> = ({ onClose }: IProps) => {
       >
         <ModalHeader display="flex" justifyContent="center" px={DEFAULT_GAP}>
           {sessionProposal ? (
-            <SessionRequestHeader
-              caption={t<string>('captions.enableRequest')}
-              description={sessionProposal.params.proposer.metadata.description}
-              host={sessionProposal.params.proposer.metadata.url}
-              iconUrl={sessionProposal.params.proposer.metadata.icons[0]}
-              isWalletConnect={true}
-              name={sessionProposal.params.proposer.metadata.name}
-              network={network || undefined}
-            />
+            <VStack alignItems="center" justifyContent="flex-start" spacing={2}>
+              <SessionRequestHeader
+                description={
+                  sessionProposal.params.proposer.metadata.description
+                }
+                host={sessionProposal.params.proposer.metadata.url}
+                iconUrl={sessionProposal.params.proposer.metadata.icons[0]}
+                isWalletConnect={true}
+                name={sessionProposal.params.proposer.metadata.name}
+                network={network || undefined}
+              />
+
+              {/*network*/}
+              <NetworkSelect
+                network={network}
+                networks={networks}
+                onSelect={handleNetworkSelect}
+              />
+
+              {/*caption*/}
+              <Text
+                color={subTextColor}
+                fontSize="sm"
+                textAlign="center"
+                w="full"
+              >
+                {t<string>('captions.enableRequest')}
+              </Text>
+            </VStack>
           ) : (
             <WalletConnectBannerIcon h={9} w={60} />
           )}
         </ModalHeader>
 
-        {renderContent()}
+        <ModalBody display="flex" px={DEFAULT_GAP}>
+          {renderBody()}
+        </ModalBody>
+
+        <ModalFooter p={DEFAULT_GAP}>{renderFooter()}</ModalFooter>
       </ModalContent>
     </Modal>
   );

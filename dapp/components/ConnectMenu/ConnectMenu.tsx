@@ -191,7 +191,6 @@ const ConnectMenu: FC<IProps> = ({ onConnect, onReset }: IProps) => {
 
     try {
       session = await connect();
-      console.log(session);
       namespaceKey = Object.keys(session.namespaces)[0] || null;
 
       if (!namespaceKey) {

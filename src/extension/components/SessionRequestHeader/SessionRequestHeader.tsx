@@ -1,13 +1,24 @@
-import { Avatar, Box, Heading, HStack, Text, VStack } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Heading,
+  HStack,
+  Link,
+  Text,
+  VStack,
+} from '@chakra-ui/react';
 import React, { FC } from 'react';
+import { IoOpenOutline } from 'react-icons/io5';
 
 // components
-import ChainBadge from '@extension/components/ChainBadge';
 import SessionAvatar from '@extension/components/SessionAvatar';
+
+// constants
+import { DEFAULT_GAP } from '@extension/constants';
 
 // hooks
 import useDefaultTextColor from '@extension/hooks/useDefaultTextColor';
-import useSubTextColor from '@extension/hooks/useSubTextColor';
+import usePrimaryColorScheme from '@extension/hooks/usePrimaryColorScheme';
 import useTextBackgroundColor from '@extension/hooks/useTextBackgroundColor';
 
 // theme
@@ -16,8 +27,10 @@ import { theme } from '@extension/theme';
 // types
 import { INetwork } from '@extension/types';
 
+// utils
+import isValidUrl from '@common/utils/isValidUrl';
+
 interface IProps {
-  caption: string;
   description?: string;
   host: string;
   iconUrl?: string;
@@ -27,64 +40,79 @@ interface IProps {
 }
 
 const SessionRequestHeader: FC<IProps> = ({
-  caption,
   description,
   host,
   iconUrl,
   isWalletConnect = false,
   name,
-  network,
 }: IProps) => {
   // hooks
   const defaultTextColor: string = useDefaultTextColor();
-  const subTextColor: string = useSubTextColor();
+  const primaryColorScheme: string = usePrimaryColorScheme();
   const textBackgroundColor: string = useTextBackgroundColor();
 
   return (
     <VStack alignItems="center" spacing={5} w="full">
       <HStack alignItems="center" justifyContent="center" spacing={4} w="full">
         {/*app icon */}
-        {/*<Avatar name={name} size="sm" src={iconUrl} />*/}
         <SessionAvatar
           iconUrl={iconUrl}
           name={name}
           isWalletConnect={isWalletConnect}
         />
 
-        {/*app name*/}
-        <Heading color={defaultTextColor} size="md" textAlign="center">
-          {name}
-        </Heading>
+        <VStack
+          alignItems="flex-start"
+          flex={1}
+          justifyContent="space-evenly"
+          w="full"
+        >
+          {/*name*/}
+          <Heading color={defaultTextColor} size="md" textAlign="left">
+            {name}
+          </Heading>
+
+          {/*host*/}
+          {isValidUrl(host) ? (
+            <Button
+              aria-label="Open host in external webpage"
+              as={Link}
+              colorScheme={primaryColorScheme}
+              fontSize="sm"
+              href={host}
+              rightIcon={<IoOpenOutline />}
+              target="_blank"
+              variant="link"
+            >
+              {host}
+            </Button>
+          ) : (
+            <Box
+              backgroundColor={textBackgroundColor}
+              borderRadius={theme.radii['3xl']}
+              px={DEFAULT_GAP / 3}
+              py={1}
+            >
+              <Text
+                color={defaultTextColor}
+                fontSize="sm"
+                maxW={250}
+                noOfLines={1}
+                textAlign="left"
+              >
+                {host}
+              </Text>
+            </Box>
+          )}
+        </VStack>
       </HStack>
 
-      <VStack alignItems="center" justifyContent="flex-start" spacing={2}>
-        {/*app description*/}
-        {description && (
-          <Text color={defaultTextColor} fontSize="sm" textAlign="center">
-            {description}
-          </Text>
-        )}
-
-        {/*app host*/}
-        <Box
-          backgroundColor={textBackgroundColor}
-          borderRadius={theme.radii['3xl']}
-          px={2}
-          py={1}
-        >
-          <Text color={defaultTextColor} fontSize="xs" textAlign="center">
-            {host}
-          </Text>
-        </Box>
-
-        {/*network*/}
-        {network && <ChainBadge network={network} />}
-
-        {/*caption*/}
-        <Text color={subTextColor} fontSize="sm" textAlign="center">
-          {caption}
+      {/*app description*/}
+      {description && (
+        <Text color={defaultTextColor} fontSize="sm" textAlign="center">
+          {description}
         </Text>
-      </VStack>
+      )}
     </VStack>
   );
 };

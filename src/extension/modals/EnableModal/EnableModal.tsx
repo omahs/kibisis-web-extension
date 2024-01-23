@@ -20,6 +20,7 @@ import { useDispatch } from 'react-redux';
 
 // components
 import Button from '@extension/components/Button';
+import ChainBadge from '@extension/components/ChainBadge';
 import EmptyState from '@extension/components/EmptyState';
 import SessionRequestHeader, {
   SessionRequestHeaderSkeleton,
@@ -288,14 +289,23 @@ const EnableModal: FC<IProps> = ({ onClose }: IProps) => {
       >
         <ModalHeader justifyContent="center" px={DEFAULT_GAP}>
           {enableRequest ? (
-            <SessionRequestHeader
-              caption={t<string>('captions.enableRequest')}
-              description={enableRequest.clientInfo.description || undefined}
-              host={enableRequest.clientInfo.host}
-              iconUrl={enableRequest.clientInfo.iconUrl || undefined}
-              name={enableRequest.clientInfo.appName}
-              network={network || undefined}
-            />
+            <VStack alignItems="center" justifyContent="flex-start" spacing={2}>
+              <SessionRequestHeader
+                description={enableRequest.clientInfo.description || undefined}
+                host={enableRequest.clientInfo.host}
+                iconUrl={enableRequest.clientInfo.iconUrl || undefined}
+                name={enableRequest.clientInfo.appName}
+                network={network || undefined}
+              />
+
+              {/*network*/}
+              {network && <ChainBadge network={network} />}
+
+              {/*caption*/}
+              <Text color={subTextColor} fontSize="sm" textAlign="center">
+                {t<string>('captions.enableRequest')}
+              </Text>
+            </VStack>
           ) : (
             <SessionRequestHeaderSkeleton />
           )}
@@ -313,6 +323,7 @@ const EnableModal: FC<IProps> = ({ onClose }: IProps) => {
             >
               {t<string>('buttons.cancel')}
             </Button>
+
             <Button
               isLoading={saving}
               onClick={handleConnectClick}

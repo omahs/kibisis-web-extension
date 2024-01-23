@@ -81,12 +81,18 @@ export default function useWalletConnect(): IUseWalletConnectState {
 
     await walletConnectModal.openModal({ uri });
 
-    _session = await approval();
+    try {
+      _session = await approval();
 
-    walletConnectModal.closeModal();
-    setSession(_session);
+      walletConnectModal.closeModal();
+      setSession(_session);
 
-    return _session;
+      return _session;
+    } catch (error) {
+      walletConnectModal.closeModal();
+
+      throw error;
+    }
   };
   const signTransactions = async (txns: IArc0001SignTxns[]) => {
     if (signClient && session) {
@@ -110,6 +116,7 @@ export default function useWalletConnect(): IUseWalletConnectState {
       new WalletConnectModal({
         projectId: __WALLET_CONNECT_PROJECT_ID__,
         explorerRecommendedWalletIds: 'NONE',
+        walletConnectVersion: 2,
       })
     );
 
