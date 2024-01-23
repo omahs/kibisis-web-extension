@@ -12,6 +12,7 @@ import { WalletConnectMethodEnum } from '@extension/enums';
 
 // types
 import { IArc0001SignTxns } from '@common/types';
+import { INetwork } from '@extension/types';
 import { IUseWalletConnectState } from './types';
 
 // utils
@@ -23,26 +24,6 @@ export default function useWalletConnect(): IUseWalletConnectState {
   const [session, setSession] = useState<SessionTypes.Struct | null>(null);
   const [walletConnectModal, setWalletConnectModal] =
     useState<WalletConnectModal | null>(null);
-  // misc
-  const optionalNamespaces: ProposalTypes.OptionalNamespaces = {
-    // testnets
-    algorand: {
-      chains: ['algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe'],
-      events: [],
-      methods: [
-        WalletConnectMethodEnum.SignTxns,
-        WalletConnectMethodEnum.SignBytes,
-      ],
-    },
-    voi: {
-      chains: ['voi:IXnoWtviVVJW5LGivNFc0Dq14V3kqaXu'],
-      events: [],
-      methods: [
-        WalletConnectMethodEnum.SignTxns,
-        WalletConnectMethodEnum.SignBytes,
-      ],
-    },
-  };
   // actions
   const connect = async () => {
     let pairing: PairingTypes.Struct | null;
@@ -60,7 +41,6 @@ export default function useWalletConnect(): IUseWalletConnectState {
     // if we have an existing active pairing, we can use that
     if (pairing) {
       const { approval } = await signClient.connect({
-        optionalNamespaces,
         pairingTopic: pairing.topic,
       });
 
@@ -71,9 +51,7 @@ export default function useWalletConnect(): IUseWalletConnectState {
       return _session;
     }
 
-    const { approval, uri } = await signClient.connect({
-      optionalNamespaces,
-    });
+    const { approval, uri } = await signClient.connect({});
 
     if (!uri) {
       throw new Error('failed to get walletconnect uri');
@@ -94,21 +72,20 @@ export default function useWalletConnect(): IUseWalletConnectState {
       throw error;
     }
   };
-  const signTransactions = async (txns: IArc0001SignTxns[]) => {
+  const signTransactions = async (
+    txns: IArc0001SignTxns[],
+    network: INetwork
+  ) => {
     if (signClient && session) {
       await signClient.request({
         topic: session.topic,
-        chainId: '',
+        chainId: `${network.namespace.key}:${network.namespace.reference}`,
         request: {
           method: WalletConnectMethodEnum.SignTxns,
-          params: [
-            '0x7468697320697320612074657374206d65737361676520746f206265207369676e6564',
-            '0x1d85568eEAbad713fBB5293B45ea066e552A90De',
-          ],
+          params: txns,
         },
       });
     }
-    console.log(session);
   };
 
   useEffect(() => {

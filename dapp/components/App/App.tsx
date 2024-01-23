@@ -42,6 +42,9 @@ import { DEFAULT_GAP } from '@extension/constants';
 // enums
 import { ConnectionTypeEnum } from '../../enums';
 
+// hooks
+import useWalletConnect from '../../hooks/useWalletConnect';
+
 // theme
 import { theme } from '@extension/theme';
 
@@ -62,6 +65,11 @@ const App: FC = () => {
       },
     ],
   });
+  // hooks
+  const {
+    connect: connectViaWalletConnect,
+    signTransactions: signTransactionsViaWalletConnect,
+  } = useWalletConnect();
   // states
   const [connectionType, setConnectionType] =
     useState<ConnectionTypeEnum | null>(null);
@@ -127,6 +135,7 @@ const App: FC = () => {
 
                 {/*connect menu*/}
                 <ConnectMenu
+                  connectViaWalletConnect={connectViaWalletConnect}
                   onConnect={handleConnectProvider}
                   onReset={handleResetProvider}
                 />
@@ -175,6 +184,9 @@ const App: FC = () => {
                     account={selectedAccount}
                     connectionType={connectionType}
                     network={selectedNetwork}
+                    signTransactionsViaWalletConnect={
+                      signTransactionsViaWalletConnect
+                    }
                   />
 
                   <AssetActionsTab

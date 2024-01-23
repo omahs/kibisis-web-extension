@@ -123,6 +123,7 @@ export default function useWalletConnect(
     setSessionProposal(proposal);
     setPairing(false);
   };
+  const handleSessionRequest = () => {};
   const rejectSessionProposalAction: () => Promise<void> = async () => {
     if (web3Wallet && sessionProposal) {
       logger.debug(
@@ -144,6 +145,7 @@ export default function useWalletConnect(
     if (web3Wallet && uri) {
       (async () => {
         web3Wallet.on('session_proposal', handleSessionProposal);
+        web3Wallet.on('session_request', handleSessionRequest);
 
         setPairing(true);
 

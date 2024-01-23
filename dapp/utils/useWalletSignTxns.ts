@@ -1,11 +1,10 @@
 import { encode as encodeBase64 } from '@stablelib/base64';
 
+// types
+import { ISignTransactionViaUseWalletFunction } from '../types';
+
 export default async function useWalletSignTxns(
-  signTransactionsFunction: (
-    transactions: Uint8Array[] | Uint8Array[][],
-    indexesToSign?: number[],
-    returnGroup?: boolean
-  ) => Promise<Uint8Array[]>,
+  signTransactionsFunction: ISignTransactionViaUseWalletFunction,
   indexesToSign: number[],
   encodedTxns: Uint8Array[]
 ): Promise<(string | null)[]> {

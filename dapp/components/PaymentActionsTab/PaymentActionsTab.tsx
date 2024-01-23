@@ -37,13 +37,11 @@ import ConnectionNotInitializedContent from '../ConnectionNotInitializedContent'
 // enums
 import { ConnectionTypeEnum } from '../../enums';
 
-// hooks
-import useWalletConnect from '../../hooks/useWalletConnect';
-
 // theme
 import { theme } from '@extension/theme';
 
 // types
+import { IArc0001SignTxns } from '@common/types';
 import { INetwork } from '@extension/types';
 import { IAccountInformation } from '../../types';
 
@@ -60,22 +58,21 @@ interface IProps {
   account: IAccountInformation | null;
   connectionType: ConnectionTypeEnum | null;
   network: INetwork | null;
+  signTransactionsViaWalletConnect: (txns: IArc0001SignTxns[]) => Promise<void>;
 }
 
 const SignTxnTab: FC<IProps> = ({
   account,
   connectionType,
   network,
+  signTransactionsViaWalletConnect,
 }: IProps) => {
   const toast: CreateToastFnReturn = useToast({
     duration: 3000,
     isClosable: true,
     position: 'top',
   });
-  const { signTransactions: signUseWalletTransactions } = useWallet();
-  // hooks
-  const { signTransactions: signWalletConnectTransactions } =
-    useWalletConnect();
+  const { signTransactions: signTransactionsViaUseWallet } = useWallet();
   // states
   const [amount, setAmount] = useState<BigNumber>(new BigNumber('0'));
   const [signedTransaction, setSignedTransaction] =
@@ -127,14 +124,14 @@ const SignTxnTab: FC<IProps> = ({
           break;
         case ConnectionTypeEnum.UseWallet:
           result = await useWalletSignTxns(
-            signUseWalletTransactions,
+            signTransactionsViaUseWallet,
             [0],
             [encodeUnsignedTransaction(unsignedTransaction)]
           );
 
           break;
         case ConnectionTypeEnum.WalletConnectv2:
-          await signWalletConnectTransactions(
+          await signTransactionsViaWalletConnect(
             [unsignedTransaction].map((value) => ({
               txn: encodeBase64(encodeUnsignedTransaction(value)),
             }))

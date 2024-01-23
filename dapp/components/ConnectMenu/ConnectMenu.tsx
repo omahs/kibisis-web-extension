@@ -38,9 +38,6 @@ import {
 // enums
 import { ConnectionTypeEnum } from '../../enums';
 
-// hooks
-import useWalletConnect from '../../hooks/useWalletConnect';
-
 // types
 import { ILogger } from '@common/types';
 import { INetwork } from '@extension/types';
@@ -58,17 +55,21 @@ export interface IConnectResult {
 }
 
 interface IProps {
+  connectViaWalletConnect: () => Promise<SessionTypes.Struct>;
   onConnect: (result: IConnectResult) => void;
   onReset: () => void;
 }
 
-const ConnectMenu: FC<IProps> = ({ onConnect, onReset }: IProps) => {
+const ConnectMenu: FC<IProps> = ({
+  connectViaWalletConnect,
+  onConnect,
+  onReset,
+}: IProps) => {
   const toast: CreateToastFnReturn = useToast({
     duration: 3000,
     isClosable: true,
     position: 'top',
   });
-  const { connect } = useWalletConnect();
   const { connectedAccounts, providers } = useWallet();
   // state
   const [useWalletNetwork, setUseWalletNetwork] = useState<INetwork | null>(
@@ -190,7 +191,7 @@ const ConnectMenu: FC<IProps> = ({ onConnect, onReset }: IProps) => {
     let session: SessionTypes.Struct;
 
     try {
-      session = await connect();
+      session = await connectViaWalletConnect();
       namespaceKey = Object.keys(session.namespaces)[0] || null;
 
       if (!namespaceKey) {
