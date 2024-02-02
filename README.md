@@ -102,7 +102,7 @@ $ yarn install
 
 ### 3.3. Install Local Browsers (Optional)
 
-If you are want to run a standalone browser for development, you can install developer versions of Chrome and Firefox. If these are installed, these will be used as the installation of the temporary extensions that are built in step [3.4.](#34-run)
+If you want to run a standalone browser for development, you can install developer versions of Chrome and Firefox. If these are installed, these will be used as the installation of the temporary extensions that are built in step [3.4.](#34-run)
 
 > ⚠️ **NOTE:** the following commands can be run again to re-download and install the latest version. Your saved profile and extension settings will not be affected as they are stored in a separate directory in `.<chrome|firefox>_profile/`.
 >
